@@ -1,5 +1,5 @@
 from collections import namedtuple
-import random, time
+import pygame, random, time
 
 CardTuple = namedtuple('Card', ['value', 'suit'])
 
@@ -13,7 +13,14 @@ cardsuits = ['Clubs', 'Diamonds', 'Hearts', 'Spades']
 
 class Card:
   def __init__(self):
+    # Does not take into account the "deck" as a whole; collisions are currently possible
     self.data = CardTuple(value=random.choice(cardvalues), suit=random.choice(cardsuits))
+    self.id = self.shorthand()
+    self.img = f"graphics/cards/{self.id}.png"
+    self.card_img = pygame.image.load(self.img)
+    self.card_img = pygame.transform.scale(self.card_img, (self.card_img.get_width() * 4, self.card_img.get_height() * 4))
+    self.card_surf = pygame.Surface(self.card_img.get_size())
+    self.card_surf.blit(self.card_img, (0, 0))
 
   def info(self, card):
     card = card.data
@@ -29,6 +36,10 @@ class Card:
     else:
       return f"{card.value} of {card.suit}"
 
+  def shorthand(self):
+    card = self.data
+    return f"{card.value}{card.suit[0]}"
+
 class Player:
   def __init__(self):
     self.card1 = Card()
@@ -39,13 +50,3 @@ class Flop:
     self.card1 = Card()
     self.card2 = Card()
     self.card3 = Card()
-
-p1 = Player()
-p2 = Player()
-flop = Flop()
-
-print(f"Flop: {flop.card1.info(flop.card1)}, {flop.card2.info(flop.card2)}, {flop.card3.info(flop.card3)}\n")
-time.sleep(1)
-print(f"Player1 hand: {p1.card1.info(p1.card1)}, {p1.card1.info(p1.card2)}\n")
-time.sleep(1)
-print(f"Player2 hand: {p2.card1.info(p2.card1)}, {p2.card1.info(p2.card2)}")
