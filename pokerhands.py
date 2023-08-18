@@ -16,6 +16,9 @@ cardsuits = ['C', 'D', 'H', 'S']
 
 class Card:
   def __init__(self, input_value, input_suit):
+    self.animation_duration = 10000
+    self.position = None
+    self.start_position = None
     self.data = CardTuple(value=input_value, suit=input_suit)
     self.id = f"{self.data.value}{self.data.suit}"
     self.img = f"graphics/cards/{self.id}.png"
@@ -30,14 +33,13 @@ class Card:
     blit_pos = (0, 0)
     self.card_surf.blit(self.card_rot, blit_pos)
 
-
-
     # self.card_surf = pygame.Surface(self.card_img.get_size())
     #self.card_surf.blit(self.card_img, (0, 0))
     
     # self.card_surf = pygame.transform.rotate(pygame.Surface(self.card_img.get_size()), self.card_rotation_angle)
     # self.card_rect = self.card_surf.get_rect()
     # self.card_surf.blit(self.card_surf, self.card_rect)
+
     self.card_y = (P1_C1[1] - self.card_surf.get_height() // 2) + random.randint(-20, 20)
 
 
