@@ -21,7 +21,6 @@ class Board:
     # Does not print P2 C2 for some reason
     for player in self.player_list:
       for card in player.cards:
-        print(player.cards)
         if not card.start_position:
           card.start_position = (1638, 372)
         self.display_surface.blit(card.card_surf, card.start_position)
@@ -81,7 +80,6 @@ class Dealer():
   def cooldowns(self):
     # Need to use delta time
     current_time = pygame.time.get_ticks()
-
     if self.last_dealt_card_time and current_time - 200 > self.last_dealt_card_time:
       self.can_deal = True
 
@@ -91,25 +89,25 @@ class Dealer():
   def animate_hole_card(self, card):
     current_time = pygame.time.get_ticks()
     elapsed_time = current_time - self.last_dealt_card_time
-    
+
     current_card = card
     animation_duration = 200
 
     # print(f"STARTPOS {start_position}")
 
     # Calculate the increment for each frame to move the card
-    dx = (current_card.position[0] - current_card.start_position[0]) / animation_duration
-    dy = (current_card.position[1] - current_card.start_position[1]) / animation_duration
+    dx = (current_card.position[0] - current_card.orig_position[0]) / animation_duration
+    dy = (current_card.position[1] - current_card.orig_position[1]) / animation_duration
 
     if elapsed_time < animation_duration:
+      # (x, y)
       current_card.start_position = (int(current_card.start_position[0] + dx * elapsed_time), int(current_card.start_position[1] + dy * elapsed_time))
-    
-    print(current_card.start_position)
-    
+      current_card.start_position = (current_card.orig_position[0] + (current_card.position[0] - current_card.orig_position[0]) * (elapsed_time / animation_duration),
+                                     current_card.orig_position[1] + (current_card.position[1] - current_card.orig_position[1]) * (elapsed_time / animation_duration))
     #current_card.start_position = (int(start_position[0] + 10), int(start_position[1]))
 
-    # if current_card.start_position[0] > current_card.position[0] and elapsed_time >= animation_duration:
-    #   self.animating_card = None
+    else:
+      card.animation_complete = True
 
     # print(self.animating_card.start_position, self.animating_card.position)
     
@@ -119,29 +117,34 @@ class Dealer():
 
       current_player = self.players_list[self.current_player_index]
       current_player.cards.append(self.deck[-1])
+      # current_player.cards[-1].uuid = self.update_dealt_card_count() + 1
 
       # This is ugly and should reflect an actual table position of players to be dynamic
       if self.current_player_index == 0:
         if len(current_player.cards) == 1:
           current_player.cards[0].position = (P1_C1[0], current_player.cards[0].card_y)
           current_player.cards[0].start_position = (0, 1080)
+          current_player.cards[0].orig_position = current_player.cards[0].start_position
           self.animating_card = current_player.cards[0]
 
         elif len(current_player.cards) == 2:
           current_player.cards[1].position = (P1_C2[0], current_player.cards[1].card_y)
           current_player.cards[1].start_position = (0, 1080)
+          current_player.cards[1].orig_position = current_player.cards[1].start_position
           self.animating_card = current_player.cards[1]
 
       elif self.current_player_index == 1:
         if len(current_player.cards) == 1:
           current_player.cards[0].position = ((P2_C1[0] - current_player.cards[0].card_surf.get_width() - 80), current_player.cards[0].card_y)
           current_player.cards[0].start_position = (0, 1080)
+          current_player.cards[0].orig_position = current_player.cards[0].start_position
           self.animating_card = current_player.cards[0]
 
         # Bugged and I have no clue why
         elif len(current_player.cards) == 2:
           current_player.cards[1].position = ((P2_C1[0] - current_player.cards[1].card_surf.get_width() - 20), current_player.cards[1].card_y)
           current_player.cards[1].start_position = (0, 1080)
+          current_player.cards[1].orig_position = current_player.cards[1].start_position
 
           # print(current_player.cards[1].start_position)
           # print("ENDPOS", current_player.cards[1].position)
@@ -233,16 +236,18 @@ class Dealer():
 
     self.cooldowns()
 
-    if self.dealt_cards <= (self.num_players * 2):
+    if self.dealt_cards < (self.num_players * 2):
       self.deal_hole_cards()
-      if self.animating_card:
-        self.animate_hole_card(self.animating_card)
-    else:
-      if self.dealt_cards == (self.num_players * 2):
-        self.can_deal_flop = True
-        self.deal_flop()
 
-    if self.dealt_cards < (self.num_players * 2) + 3:
+    if self.animating_card:
+      self.animate_hole_card(self.animating_card)
+
+    if self.dealt_cards == (self.num_players * 2) and (not self.animating_card or self.animating_card.animation_complete):
+      self.can_deal_flop = True
+      self.deal_flop()
+
+    if self.dealt_cards < (self.num_players * 2) + 3 and self.can_deal_flop:
+      
       self.deal_flop()
 
     if not self.printed_flop and self.dealt_cards == (self.num_players * 2) + 3:

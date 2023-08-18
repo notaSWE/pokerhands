@@ -19,8 +19,10 @@ class Card:
     self.animation_start_time = pygame.time.get_ticks()
     self.animation_complete = False
     self.animation_duration = 10000
+    self.uuid = None
     self.position = None
     self.start_position = None
+    self.orig_position = None
     self.data = CardTuple(value=input_value, suit=input_suit)
     self.id = f"{self.data.value}{self.data.suit}"
     self.img = f"graphics/cards/{self.id}.png"
