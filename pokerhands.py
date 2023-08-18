@@ -16,6 +16,8 @@ cardsuits = ['C', 'D', 'H', 'S']
 
 class Card:
   def __init__(self, input_value, input_suit):
+    self.animation_start_time = pygame.time.get_ticks()
+    self.animation_complete = False
     self.animation_duration = 10000
     self.position = None
     self.start_position = None
@@ -41,7 +43,6 @@ class Card:
     # self.card_surf.blit(self.card_surf, self.card_rect)
 
     self.card_y = (P1_C1[1] - self.card_surf.get_height() // 2) + random.randint(-20, 20)
-
 
 class Player:
   def __init__(self):
