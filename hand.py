@@ -1,51 +1,43 @@
+import itertools
 from pokerhands import *
 from settings import *
-import itertools
 
 # This is more like a 'hand' and should probably be renamed
-class Board:
+class Hand:
   def __init__(self):
     self.display_surface = pygame.display.get_surface()
     self.winner = None
-    self.font = font = pygame.font.Font(GAME_FONT, 46)
+    self.font = pygame.font.Font(GAME_FONT, 120)
     self.win_rotation_angle = random.uniform(-10, 10)
-  
     self.p1 = Player()
     self.p2 = Player()
     self.flop = Flop()
-
     self.player_list = [self.p1, self.p2]
     self.dealer = Dealer(self.player_list, self.flop)
 
   def render_cards(self):
-    # Does not print P2 C2 for some reason
+    # Draw cards at current positions
     for player in self.player_list:
       for card in player.cards:
-        if not card.start_position:
-          card.start_position = (1638, 372)
         self.display_surface.blit(card.card_surf, card.start_position)
-        # elif not self.dealer.animating_card:
-        #   print(card.card_surf.position)
-        #   self.display_surface.blit(card.card_surf, card.start_position)  # Render the card at its updated position
-
     for card in self.flop.cards:
       self.display_surface.blit(card.card_surf, card.position)
 
   def render_winner(self):
-    if self.dealer.determined_winner != None:
+    if self.dealer.determined_winner is not None:
       # Set the text and color based on the winner
       if self.dealer.determined_winner == "Player 1":
-          text = "Player 1 Wins!"
-          text_color = (135, 206, 235) # Blue
-          coordinates = (20, 200)
+        text = "Player 1 Wins!"
+        text_color = (115, 235, 0) # Blue
       elif self.dealer.determined_winner == "Player 2":
-          text = "Player 2 Wins!"
-          text_color = (115, 235, 0) # Green
-          coordinates = (1580, 200)
+        text = "Player 2 Wins!"
+        text_color = (135, 206, 235) # Green
       elif self.dealer.determined_winner == "Tie":
-          text = "Split Pot!"
-          text_color = (255, 185, 250) # Pink
-          coordinates = (850, 200)
+        text = "Split Pot!"
+        text_color = (255, 192, 203) # Pink
+
+      coordinates = (520, 100)
+      # Winner text
       text_surface = self.font.render(text, True, text_color)
       text_rect = text_surface.get_rect()
       text_rect.topleft = coordinates
@@ -66,10 +58,9 @@ class Dealer():
     self.current_player_index = 0
     self.current_flop_index = 0
     self.printed_flop = False
-    self.display_surface = pygame.display.get_surface()
-    self.deck = fresh_deck.copy()
-    self.animating_card = None
+    self.deck = self.generate_deck()
     random.shuffle(self.deck)
+    self.animating_card = None
     self.can_deal = True
     self.can_deal_flop = False
     self.last_dealt_card_time = None
@@ -77,13 +68,21 @@ class Dealer():
     self.dealt_cards = 0
     self.flop = flop
 
+  def generate_deck(self):
+    fresh_deck = []
+    for cv in cardvalues:
+      for cs in cardsuits:
+        fresh_deck.append(Card(cv, cs))
+    return fresh_deck
+
   def cooldowns(self):
     # Need to use delta time
     current_time = pygame.time.get_ticks()
     if self.last_dealt_card_time and current_time - 200 > self.last_dealt_card_time:
       self.can_deal = True
 
-    if self.last_dealt_flop_time and current_time - random.randint(120, 200) > self.last_dealt_flop_time:
+    if self.last_dealt_flop_time and \
+            current_time - random.randint(120, 200) > self.last_dealt_flop_time:
       self.can_deal_flop = True
 
   def animate_hole_card(self, card):
@@ -93,77 +92,57 @@ class Dealer():
     current_card = card
     animation_duration = 200
 
-    # print(f"STARTPOS {start_position}")
-
-    # Calculate the increment for each frame to move the card
-    dx = (current_card.position[0] - current_card.orig_position[0]) / animation_duration
-    dy = (current_card.position[1] - current_card.orig_position[1]) / animation_duration
-
     if elapsed_time < animation_duration:
-      # (x, y)
-      current_card.start_position = (int(current_card.start_position[0] + dx * elapsed_time), int(current_card.start_position[1] + dy * elapsed_time))
-      current_card.start_position = (current_card.orig_position[0] + (current_card.position[0] - current_card.orig_position[0]) * (elapsed_time / animation_duration),
-                                     current_card.orig_position[1] + (current_card.position[1] - current_card.orig_position[1]) * (elapsed_time / animation_duration))
-    #current_card.start_position = (int(start_position[0] + 10), int(start_position[1]))
-
+      # Calculate the increment for each frame to move the card and update position
+      x_orig, y_orig = current_card.orig_position
+      x_final, y_final = current_card.position
+      elapsed_ratio = elapsed_time / animation_duration
+      x_change = x_orig + (x_final - x_orig) * elapsed_ratio
+      y_change = y_orig + (y_final - y_orig) * elapsed_ratio
+      current_card.start_position = (x_change, y_change)
     else:
       card.animation_complete = True
 
-    # print(self.animating_card.start_position, self.animating_card.position)
-    
   def deal_hole_cards(self):
-
     if self.can_deal:
-
+      # Deal card to current player's hand
       current_player = self.players_list[self.current_player_index]
       current_player.cards.append(self.deck[-1])
-      # current_player.cards[-1].uuid = self.update_dealt_card_count() + 1
 
-      # This is ugly and should reflect an actual table position of players to be dynamic
+      # Card one of two; sets positions for both players
       if self.current_player_index == 0:
         if len(current_player.cards) == 1:
           current_player.cards[0].position = (P1_C1[0], current_player.cards[0].card_y)
           current_player.cards[0].start_position = (0, 1080)
           current_player.cards[0].orig_position = current_player.cards[0].start_position
-          self.animating_card = current_player.cards[0]
-
         elif len(current_player.cards) == 2:
           current_player.cards[1].position = (P1_C2[0], current_player.cards[1].card_y)
           current_player.cards[1].start_position = (0, 1080)
           current_player.cards[1].orig_position = current_player.cards[1].start_position
-          self.animating_card = current_player.cards[1]
-
+        self.animating_card = current_player.cards[-1]
+      # Card two of two
       elif self.current_player_index == 1:
         if len(current_player.cards) == 1:
           current_player.cards[0].position = ((P2_C1[0] - current_player.cards[0].card_surf.get_width() - 80), current_player.cards[0].card_y)
           current_player.cards[0].start_position = (0, 1080)
           current_player.cards[0].orig_position = current_player.cards[0].start_position
-          self.animating_card = current_player.cards[0]
-
-        # Bugged and I have no clue why
         elif len(current_player.cards) == 2:
           current_player.cards[1].position = ((P2_C1[0] - current_player.cards[1].card_surf.get_width() - 20), current_player.cards[1].card_y)
           current_player.cards[1].start_position = (0, 1080)
           current_player.cards[1].orig_position = current_player.cards[1].start_position
+        self.animating_card = current_player.cards[-1]
 
-          # print(current_player.cards[1].start_position)
-          # print("ENDPOS", current_player.cards[1].position)
-
-          self.animating_card = current_player.cards[1]
-      
       if self.animating_card:
         self.last_dealt_card_time = pygame.time.get_ticks()
         self.animate_hole_card(self.animating_card)
 
-
+      # Remove dealt card from deck; change player index; prompt card dealing cooldown
       self.deck.pop(-1)
       self.current_player_index = (self.current_player_index + 1) % self.num_players
       self.can_deal = False
 
-    # if dest != "muck":
-    #   dest.cards.append(self.deck[-1])
-
   def deal_flop(self):
+    # Set flop card locations
     flop_x = self.players_list[0].cards[0].card_surf.get_width()
     if self.current_flop_index == 0:
       flop_x = self.players_list[0].cards[0].card_surf.get_width() * 2
@@ -171,7 +150,8 @@ class Dealer():
       flop_x = self.players_list[0].cards[0].card_surf.get_width() * 2 + (self.players_list[0].cards[0].card_surf.get_width() + 20)
     elif self.current_flop_index == 2:
       flop_x = self.players_list[0].cards[0].card_surf.get_width() * 2 + (self.players_list[0].cards[0].card_surf.get_width() * 2 + 40)
-    
+
+    # Three flop cards in above set locations; remove from deck; flop cooldown
     if self.can_deal and self.can_deal_flop and self.dealt_cards - (self.num_players * 2) < 3:
       self.flop.cards.append(self.deck[-1])
       self.flop.cards[self.current_flop_index].position = (flop_x, self.flop.cards[self.current_flop_index].card_y)
@@ -180,9 +160,10 @@ class Dealer():
       self.can_deal_flop = False
       self.current_flop_index += 1
 
-  # Print length of deck after card is dealt
-  # print(f"{len(self.deck)} cards left in deck; {len(self.dealt_cards)} dealt.")
+    # Print length of deck after card is dealt for troubleshooting
+    # print(f"{len(self.deck)} cards left in deck; {self.update_dealt_card_count()} dealt.")
 
+  # Hand-ranking algorithm reference in README.md
   def eval_hand(self, hand):
     # Return ranking followed by tie-break information.
     # 8. Straight Flush
@@ -197,8 +178,7 @@ class Dealer():
 
     values = sorted([c[0] for c in hand], reverse=True)
     suits = [c[1] for c in hand]
-    straight = (values == list(range(values[0], values[0]-5, -1))
-          or values == [14, 5, 4, 3, 2])
+    straight = (values == list(range(values[0], values[0]-5, -1)) or values == [14, 5, 4, 3, 2])
     flush = all(s == suits[0] for s in suits)
 
     if straight and flush: return 8, values[1]
@@ -216,24 +196,34 @@ class Dealer():
     if trips: return (6 if pairs else 3), trips, pairs, values
     return len(pairs), pairs, values
 
+  def eval_winner(self, hand_to_eval):
+    eval_cards = [(value_dict[x[0]], x[1]) for x in hand_to_eval]
+    if self.eval_hand(eval_cards[:5]) > self.eval_hand(eval_cards[5:]):
+      print(f"P1 WIN: {self.eval_hand(eval_cards[:5])}")
+      return "Player 1"
+    elif self.eval_hand(eval_cards[:5]) < self.eval_hand(eval_cards[5:]):
+      print(f"P2 WIN: {self.eval_hand(eval_cards[5:])}")
+      return "Player 2"
+    else:
+      print("SPLIT")
+      return "Tie"
+
+  # Print to console
   def print_hands(self):
     for i in range(len(self.players_list)):
       print(f"P{i+1}: {[card.id for card in self.players_list[i].cards]}")
     print(f"FL: {[card.id for card in self.flop.cards]}")
 
+  # Getter for number of dealt cards
   def update_dealt_card_count(self):
     total_card_count = 0
     for player in self.players_list:
-      for card in player.cards:
-        total_card_count += 1
-    for card in self.flop.cards:
-      total_card_count += 1
+      total_card_count += len(player.cards)
+    total_card_count += len(self.flop.cards)
     return total_card_count
 
   def update(self):
-    
     self.dealt_cards = self.update_dealt_card_count()
-
     self.cooldowns()
 
     if self.dealt_cards < (self.num_players * 2):
@@ -242,28 +232,18 @@ class Dealer():
     if self.animating_card:
       self.animate_hole_card(self.animating_card)
 
+    # Deal flop after hole cards are dealt and animations are done
     if self.dealt_cards == (self.num_players * 2) and (not self.animating_card or self.animating_card.animation_complete):
       self.can_deal_flop = True
       self.deal_flop()
-
+    # Slightly redundant
     if self.dealt_cards < (self.num_players * 2) + 3 and self.can_deal_flop:
-      
       self.deal_flop()
-
+    # Print hand data to console
     if not self.printed_flop and self.dealt_cards == (self.num_players * 2) + 3:
       self.print_hands()
       self.printed_flop = True
 
-    # This should be in a separate function but determines winner
-    if self.printed_flop and self.dealt_cards == (self.num_players * 2) + 3 and not self.determined_winner:
+    if self.dealt_cards == ((self.num_players * 2) + 3) and self.determined_winner is None:
       eval_cards = [card_id.id for card_id in self.players_list[0].cards] + [card_id.id for card_id in self.flop.cards] + [card_id.id for card_id in self.flop.cards] + [card_id.id for card_id in self.players_list[1].cards]
-      eval_cards = [(value_dict[x[0]], x[1]) for x in eval_cards]
-      if self.eval_hand(eval_cards[:5]) > self.eval_hand(eval_cards[5:]):
-        print(f"P1 WIN: {self.eval_hand(eval_cards[:5])}")
-        self.determined_winner = "Player 1"
-      elif self.eval_hand(eval_cards[:5]) < self.eval_hand(eval_cards[5:]):
-        print(f"P2 WIN: {self.eval_hand(eval_cards[5:])}")
-        self.determined_winner = "Player 2"
-      else:
-        print("SPLIT")
-        self.determined_winner = "Tie"
+      self.determined_winner = self.eval_winner(eval_cards)

@@ -1,10 +1,8 @@
 from collections import namedtuple
 from settings import *
-import math, pygame, random, time
+import pygame, random
 
 CardTuple = namedtuple('Card', ['value', 'suit'])
-
-fresh_deck = []
 
 cardvalues = [2, 3, 4, 5, 6, 7, 8, 9, "T",
   "J", # Jack
@@ -18,7 +16,6 @@ class Card:
   def __init__(self, input_value, input_suit):
     self.animation_start_time = pygame.time.get_ticks()
     self.animation_complete = False
-    self.animation_duration = 10000
     self.uuid = None
     self.position = None
     self.start_position = None
@@ -37,13 +34,7 @@ class Card:
     blit_pos = (0, 0)
     self.card_surf.blit(self.card_rot, blit_pos)
 
-    # self.card_surf = pygame.Surface(self.card_img.get_size())
-    #self.card_surf.blit(self.card_img, (0, 0))
-    
-    # self.card_surf = pygame.transform.rotate(pygame.Surface(self.card_img.get_size()), self.card_rotation_angle)
-    # self.card_rect = self.card_surf.get_rect()
-    # self.card_surf.blit(self.card_surf, self.card_rect)
-
+    # Random y value for card
     self.card_y = (P1_C1[1] - self.card_surf.get_height() // 2) + random.randint(-20, 20)
 
 class Player:
@@ -53,7 +44,3 @@ class Player:
 class Flop:
   def __init__(self):
     self.cards = []
-
-for cv in cardvalues:
-  for cs in cardsuits:
-    fresh_deck.append(Card(cv, cs))

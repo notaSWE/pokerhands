@@ -1,4 +1,4 @@
-from board import *
+from hand import *
 from pokerhands import *
 from settings import *
 import ctypes, pygame, sys
@@ -14,7 +14,7 @@ class Game:
     self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption(TITLE_STRING)
     self.clock = pygame.time.Clock()
-    self.board = Board()
+    self.hand = Hand()
 
   def run(self):
 
@@ -35,16 +35,15 @@ class Game:
           if event.button == 1:  # Left mouse button
             if mouse_down:
               mouse_down = False
-              self.board = Board()
+              self.hand = Hand()
 
       # Time variables
       self.delta_time = (pygame.time.get_ticks() - self.start_time) / 1000
       self.start_time = pygame.time.get_ticks()
       pygame.display.update()
       self.screen.fill(BG_COLOR)
-      
 
-      self.board.update()
+      self.hand.update()
       self.clock.tick(FPS)
 
 if __name__ == '__main__':
