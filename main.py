@@ -1,5 +1,5 @@
 from hand import *
-from pokerhands import *
+from cards import *
 from settings import *
 import ctypes, pygame, sys
 

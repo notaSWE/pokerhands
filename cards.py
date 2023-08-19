@@ -18,8 +18,8 @@ class Card:
     self.animation_complete = False
     self.uuid = None
     self.position = None
-    self.start_position = None
-    self.orig_position = None
+    self.start_position = (0, 1080)
+    self.orig_position = self.start_position
     self.data = CardTuple(value=input_value, suit=input_suit)
     self.id = f"{self.data.value}{self.data.suit}"
     self.img = f"graphics/cards/{self.id}.png"

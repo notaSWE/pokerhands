@@ -134,3 +134,4 @@ graphics/cards/
 .vscode
 .vscode/launch.json
 .pylintrc
+audio/*

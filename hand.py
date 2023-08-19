@@ -1,6 +1,14 @@
-import itertools
-from pokerhands import *
+import itertools, os, pygame, random
+from cards import *
 from settings import *
+
+# Audio
+pygame.mixer.init()
+audio_files = os.listdir(GAME_AUDIO_DIR)
+wav_files = [file for file in audio_files if file.endswith('.wav')]
+num_channels = len(wav_files)
+pygame.mixer.set_num_channels(num_channels)
+channels = [pygame.mixer.Channel(i) for i in range(num_channels)]
 
 # This is more like a 'hand' and should probably be renamed
 class Hand:
@@ -67,6 +75,14 @@ class Dealer():
     self.last_dealt_flop_time = None
     self.dealt_cards = 0
     self.flop = flop
+    self.audio_channel = 0
+
+  def card_audio(self):
+    random_wav = random.choice(wav_files)
+    wav_file_path = os.path.join(GAME_AUDIO_DIR, random_wav)
+    sound = pygame.mixer.Sound(wav_file_path)
+    channels[self.audio_channel].play(sound)
+    self.audio_channel += 1
 
   def generate_deck(self):
     fresh_deck = []
@@ -113,28 +129,23 @@ class Dealer():
       if self.current_player_index == 0:
         if len(current_player.cards) == 1:
           current_player.cards[0].position = (P1_C1[0], current_player.cards[0].card_y)
-          current_player.cards[0].start_position = (0, 1080)
-          current_player.cards[0].orig_position = current_player.cards[0].start_position
         elif len(current_player.cards) == 2:
           current_player.cards[1].position = (P1_C2[0], current_player.cards[1].card_y)
-          current_player.cards[1].start_position = (0, 1080)
-          current_player.cards[1].orig_position = current_player.cards[1].start_position
         self.animating_card = current_player.cards[-1]
       # Card two of two
       elif self.current_player_index == 1:
         if len(current_player.cards) == 1:
           current_player.cards[0].position = ((P2_C1[0] - current_player.cards[0].card_surf.get_width() - 80), current_player.cards[0].card_y)
-          current_player.cards[0].start_position = (0, 1080)
-          current_player.cards[0].orig_position = current_player.cards[0].start_position
         elif len(current_player.cards) == 2:
-          current_player.cards[1].position = ((P2_C1[0] - current_player.cards[1].card_surf.get_width() - 20), current_player.cards[1].card_y)
-          current_player.cards[1].start_position = (0, 1080)
-          current_player.cards[1].orig_position = current_player.cards[1].start_position
+          current_player.cards[1].position = ((P2_C2[0] - current_player.cards[1].card_surf.get_width() - 20), current_player.cards[1].card_y)
         self.animating_card = current_player.cards[-1]
 
       if self.animating_card:
         self.last_dealt_card_time = pygame.time.get_ticks()
         self.animate_hole_card(self.animating_card)
+
+      # Play audio
+      self.card_audio()
 
       # Remove dealt card from deck; change player index; prompt card dealing cooldown
       self.deck.pop(-1)
@@ -153,6 +164,7 @@ class Dealer():
 
     # Three flop cards in above set locations; remove from deck; flop cooldown
     if self.can_deal and self.can_deal_flop and self.dealt_cards - (self.num_players * 2) < 3:
+      self.card_audio()
       self.flop.cards.append(self.deck[-1])
       self.flop.cards[self.current_flop_index].position = (flop_x, self.flop.cards[self.current_flop_index].card_y)
       self.deck.pop(-1)

@@ -4,6 +4,7 @@ HEIGHT = 1080
 WIDTH = 1920
 BG_COLOR = (33, 124, 66)
 GAME_FONT = 'graphics/fonts/PixelatedDisplay.ttf'
+GAME_AUDIO_DIR = 'audio/'
 
 P1_C1 = (20, (HEIGHT / 2))
 P1_C2 = (80, (HEIGHT / 2))
