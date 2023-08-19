@@ -135,3 +135,4 @@ graphics/cards/
 .vscode/launch.json
 .pylintrc
 audio/*
+graphics/fonts/
