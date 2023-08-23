@@ -10,7 +10,6 @@ num_channels = len(wav_files)
 pygame.mixer.set_num_channels(num_channels)
 channels = [pygame.mixer.Channel(i) for i in range(num_channels)]
 
-# This is more like a 'hand' and should probably be renamed
 class Hand:
   def __init__(self):
     self.display_surface = pygame.display.get_surface()
